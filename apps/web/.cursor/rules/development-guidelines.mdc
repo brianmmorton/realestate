@@ -1,0 +1,17 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# High Level Development Guidelines
+
+- ALWAYS separate components to reduce rerenders
+- Use web/src/containers for large components shared across routes
+- Use web/src/components ONLY for highly reusable components
+- Implement code in web/src/pages unless there is a good reason to move the code to containers or components
+- Always name files according to their export
+- Always use named exports
+- For forms, use zustand to manage state alongside selectors to reduce rerenders
+- ALWAYS assume that npm run dev is running in a separate terminal outside of the IDE, so you should not start it. Instead, check typescript for compilation issues.
+- Relay queries should be defined inline
+- Always use fragments to retrieve data for a component

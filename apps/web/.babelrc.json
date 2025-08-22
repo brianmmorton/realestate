@@ -1,0 +1,8 @@
+{
+  "plugins": [
+    ["relay", {
+      "src": "./src",
+      "schema": "./schema.graphql"
+    }]
+  ]
+} 
