@@ -1,6 +1,7 @@
 import { ObjectType, Field, ID, Float, Int } from 'type-graphql'
 import { User } from './User.js'
 import { UnitEntity } from './Unit.js'
+import { RehabItemEntity } from './RehabItem.js'
 
 @ObjectType()
 export class PropertyConfiguration {
@@ -70,10 +71,20 @@ export class PropertyConfiguration {
   @Field(() => Int)
   projectionYears!: number
 
+  // Rehab information
+  @Field(() => Boolean)
+  rehabEnabled!: boolean
+
+  @Field(() => Float)
+  rehabRentIncreasePercentage!: number
+
   // Relations
   @Field(() => User)
   user!: User
 
   @Field(() => [UnitEntity])
   units!: UnitEntity[]
+
+  @Field(() => [RehabItemEntity])
+  rehabItems!: RehabItemEntity[]
 } 

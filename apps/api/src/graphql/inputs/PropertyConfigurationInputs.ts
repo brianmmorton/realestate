@@ -1,5 +1,5 @@
 import { InputType, Field, Float, Int } from 'type-graphql'
-import { IsString, IsNumber, IsPositive, Min, IsArray, ValidateNested } from 'class-validator'
+import { IsString, IsNumber, IsPositive, Min, IsArray, ValidateNested, IsBoolean } from 'class-validator'
 
 @InputType()
 export class UnitInput {
@@ -16,6 +16,18 @@ export class UnitInput {
   @IsNumber()
   @Min(0)
   monthlyRent!: number
+}
+
+@InputType()
+export class RehabItemInput {
+  @Field(() => String)
+  @IsString()
+  category!: string
+
+  @Field(() => Float)
+  @IsNumber()
+  @Min(0)
+  cost!: number
 }
 
 @InputType()
@@ -105,6 +117,21 @@ export class CreatePropertyConfigurationInput {
   @IsNumber()
   @IsPositive()
   projectionYears!: number
+
+  // Rehab information
+  @Field(() => Boolean)
+  @IsBoolean()
+  rehabEnabled!: boolean
+
+  @Field(() => Float)
+  @IsNumber()
+  @Min(0)
+  rehabRentIncreasePercentage!: number
+
+  @Field(() => [RehabItemInput])
+  @IsArray()
+  @ValidateNested({ each: true })
+  rehabItems!: RehabItemInput[]
 
   // Units
   @Field(() => [UnitInput])

@@ -80,9 +80,14 @@ model PropertyConfiguration {
   annualRentIncrease    Decimal  @map("annual_rent_increase") @db.Decimal(5, 2)
   projectionYears       Int      @map("projection_years")
 
+  // Rehab information
+  rehabEnabled                Boolean  @default(false) @map("rehab_enabled")
+  rehabRentIncreasePercentage Decimal  @default(0) @map("rehab_rent_increase_percentage") @db.Decimal(5, 2)
+
   // Relations
-  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  units Unit[]
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  units      Unit[]
+  rehabItems RehabItem[]
 
   // Indexes
   @@index([userId])
@@ -105,4 +110,20 @@ model Unit {
   // Indexes
   @@index([propertyConfigurationId])
   @@map("units")
+}
+
+model RehabItem {
+  id                      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  category                String
+  cost                    Decimal  @db.Decimal(12, 2)
+  propertyConfigurationId String   @map("property_configuration_id") @db.Uuid
+  createdAt               DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Relations
+  propertyConfiguration PropertyConfiguration @relation(fields: [propertyConfigurationId], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([propertyConfigurationId])
+  @@map("rehab_items")
 }

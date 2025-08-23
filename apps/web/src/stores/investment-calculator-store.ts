@@ -38,6 +38,18 @@ export interface Assumptions {
   projectionYears: number
 }
 
+export interface RehabItem {
+  id: string
+  category: string
+  cost: number
+}
+
+export interface RehabInfo {
+  enabled: boolean
+  items: RehabItem[]
+  rentIncreasePercentage: number
+}
+
 export interface YearlyProjection {
   year: number
   grossRentalIncome: number
@@ -60,6 +72,7 @@ interface InvestmentCalculatorState {
   loanInfo: LoanInfo
   operatingExpenses: OperatingExpenses
   assumptions: Assumptions
+  rehabInfo: RehabInfo
   savedConfigurationId?: string
   saveStatus: 'idle' | 'saving' | 'success' | 'error'
   saveError?: string
@@ -72,6 +85,10 @@ interface InvestmentCalculatorState {
   setLoanInfo: (info: Partial<LoanInfo>) => void
   setOperatingExpenses: (expenses: Partial<OperatingExpenses>) => void
   setAssumptions: (assumptions: Partial<Assumptions>) => void
+  setRehabInfo: (info: Partial<RehabInfo>) => void
+  addRehabItem: () => void
+  removeRehabItem: (id: string) => void
+  updateRehabItem: (id: string, field: keyof RehabItem, value: string | number) => void
   saveConfiguration: (name: string) => Promise<void>
   loadConfiguration: (configurationId: string) => Promise<void>
   resetConfiguration: () => void
@@ -83,6 +100,8 @@ interface InvestmentCalculatorState {
   downPayment: number
   loanAmount: number
   capRate: number
+  totalRehabCost: number
+  adjustedMonthlyRent: number
 }
 
 const calculateMonthlyMortgagePayment = (loanInfo: LoanInfo, propertyPrice: number): number => {
@@ -108,12 +127,14 @@ const calculateProjections = (
   operatingExpenses: OperatingExpenses,
   assumptions: Assumptions,
   monthlyMortgagePayment: number,
-  totalMonthlyRent: number
+  totalMonthlyRent: number,
+  totalRehabCost: number
 ): YearlyProjection[] => {
   const results: YearlyProjection[] = []
-  let currentPropertyValue = propertyInfo.price
+  let currentPropertyValue = propertyInfo.price + totalRehabCost
   let currentMonthlyRent = totalMonthlyRent
-  const loanAmount = propertyInfo.price - loanInfo.downPayment
+  const effectivePurchasePrice = propertyInfo.price + totalRehabCost
+  const loanAmount = effectivePurchasePrice - loanInfo.downPayment
   let remainingBalance = loanAmount
   
   for (let year = 1; year <= assumptions.projectionYears; year++) {
@@ -157,7 +178,7 @@ const calculateProjections = (
     if (year > 1) {
       currentPropertyValue *= (1 + assumptions.annualAppreciation / 100)
     }
-    const appreciation = year === 1 ? 0 : currentPropertyValue - (results[year - 2]?.propertyValue || propertyInfo.price)
+    const appreciation = year === 1 ? 0 : currentPropertyValue - (results[year - 2]?.propertyValue || effectivePurchasePrice)
     
     const totalReturn = cashFlow + yearlyPrincipalPaydown + appreciation
     const equity = currentPropertyValue - remainingBalance
@@ -181,10 +202,24 @@ const calculateProjections = (
   return results
 }
 
+const calculateTotalRehabCost = (rehabInfo: RehabInfo): number => {
+  if (!rehabInfo.enabled) return 0
+  return rehabInfo.items.reduce((total, item) => total + item.cost, 0)
+}
+
+const calculateAdjustedMonthlyRent = (units: Unit[], rehabInfo: RehabInfo): number => {
+  const baseRent = calculateTotalMonthlyRent(units)
+  if (!rehabInfo.enabled || rehabInfo.rentIncreasePercentage === 0) return baseRent
+  return baseRent * (1 + rehabInfo.rentIncreasePercentage / 100)
+}
+
 // Helper function to calculate all computed values
-const calculateComputedValues = (state: Pick<InvestmentCalculatorState, 'propertyInfo' | 'units' | 'loanInfo' | 'operatingExpenses' | 'assumptions'>): Pick<InvestmentCalculatorState, 'totalMonthlyRent' | 'monthlyMortgagePayment' | 'projections' | 'downPayment' | 'loanAmount' | 'capRate'> => {
+const calculateComputedValues = (state: Pick<InvestmentCalculatorState, 'propertyInfo' | 'units' | 'loanInfo' | 'operatingExpenses' | 'assumptions' | 'rehabInfo'>): Pick<InvestmentCalculatorState, 'totalMonthlyRent' | 'monthlyMortgagePayment' | 'projections' | 'downPayment' | 'loanAmount' | 'capRate' | 'totalRehabCost' | 'adjustedMonthlyRent'> => {
   const totalMonthlyRent = calculateTotalMonthlyRent(state.units)
-  const monthlyMortgagePayment = calculateMonthlyMortgagePayment(state.loanInfo, state.propertyInfo.price)
+  const totalRehabCost = calculateTotalRehabCost(state.rehabInfo)
+  const adjustedMonthlyRent = calculateAdjustedMonthlyRent(state.units, state.rehabInfo)
+  const effectivePurchasePrice = state.propertyInfo.price + totalRehabCost
+  const monthlyMortgagePayment = calculateMonthlyMortgagePayment(state.loanInfo, effectivePurchasePrice)
   const projections = calculateProjections(
     state.propertyInfo,
     state.units,
@@ -192,14 +227,17 @@ const calculateComputedValues = (state: Pick<InvestmentCalculatorState, 'propert
     state.operatingExpenses,
     state.assumptions,
     monthlyMortgagePayment,
-    totalMonthlyRent
+    adjustedMonthlyRent,
+    totalRehabCost
   )
   const downPayment = state.loanInfo.downPayment
-  const loanAmount = state.propertyInfo.price - state.loanInfo.downPayment
-  const capRate = state.propertyInfo.price > 0 ? (totalMonthlyRent * 12 / state.propertyInfo.price * 100) : 0
+  const loanAmount = effectivePurchasePrice - state.loanInfo.downPayment
+  const capRate = effectivePurchasePrice > 0 ? (adjustedMonthlyRent * 12 / effectivePurchasePrice * 100) : 0
 
   return {
     totalMonthlyRent,
+    adjustedMonthlyRent,
+    totalRehabCost,
     monthlyMortgagePayment,
     projections,
     downPayment,
@@ -240,6 +278,11 @@ export const useInvestmentCalculatorStore = create<InvestmentCalculatorState>()(
         annualRentIncrease: 2,
         projectionYears: 30
       },
+      rehabInfo: {
+        enabled: false,
+        items: [],
+        rentIncreasePercentage: 0
+      },
 
       // Initial computed values
       totalMonthlyRent: 0,
@@ -248,6 +291,8 @@ export const useInvestmentCalculatorStore = create<InvestmentCalculatorState>()(
       downPayment: 0,
       loanAmount: 0,
       capRate: 0,
+      totalRehabCost: 0,
+      adjustedMonthlyRent: 0,
       savedConfigurationId: undefined,
       saveStatus: 'idle',
       saveError: undefined,
@@ -365,6 +410,79 @@ export const useInvestmentCalculatorStore = create<InvestmentCalculatorState>()(
         })
       },
 
+      setRehabInfo: (info) => {
+        const currentState = get()
+        const updatedRehabInfo = { ...currentState.rehabInfo, ...info }
+        const newState = {
+          ...currentState,
+          rehabInfo: updatedRehabInfo
+        }
+        const computedValues = calculateComputedValues(newState)
+        
+        set({
+          ...newState,
+          ...computedValues
+        })
+      },
+
+      addRehabItem: () => {
+        const currentState = get()
+        const newItem: RehabItem = {
+          id: Date.now().toString(),
+          category: '',
+          cost: 0
+        }
+        const newState = {
+          ...currentState,
+          rehabInfo: {
+            ...currentState.rehabInfo,
+            items: [...currentState.rehabInfo.items, newItem]
+          }
+        }
+        const computedValues = calculateComputedValues(newState)
+        
+        set({
+          ...newState,
+          ...computedValues
+        })
+      },
+
+      removeRehabItem: (id) => {
+        const currentState = get()
+        const newState = {
+          ...currentState,
+          rehabInfo: {
+            ...currentState.rehabInfo,
+            items: currentState.rehabInfo.items.filter(item => item.id !== id)
+          }
+        }
+        const computedValues = calculateComputedValues(newState)
+        
+        set({
+          ...newState,
+          ...computedValues
+        })
+      },
+
+      updateRehabItem: (id, field, value) => {
+        const currentState = get()
+        const newState = {
+          ...currentState,
+          rehabInfo: {
+            ...currentState.rehabInfo,
+            items: currentState.rehabInfo.items.map(item => 
+              item.id === id ? { ...item, [field]: value } : item
+            )
+          }
+        }
+        const computedValues = calculateComputedValues(newState)
+        
+        set({
+          ...newState,
+          ...computedValues
+        })
+      },
+
       saveConfiguration: async (name: string) => {
         const currentState = get()
         
@@ -399,6 +517,12 @@ export const useInvestmentCalculatorStore = create<InvestmentCalculatorState>()(
             annualAppreciation: currentState.assumptions.annualAppreciation,
             annualRentIncrease: currentState.assumptions.annualRentIncrease,
             projectionYears: currentState.assumptions.projectionYears,
+            rehabEnabled: currentState.rehabInfo.enabled,
+            rehabRentIncreasePercentage: currentState.rehabInfo.rentIncreasePercentage,
+            rehabItems: currentState.rehabInfo.items.map(item => ({
+              category: item.category,
+              cost: item.cost,
+            })),
             units: currentState.units.map(unit => ({
               type: unit.type,
               quantity: unit.quantity,
@@ -472,6 +596,12 @@ export const useInvestmentCalculatorStore = create<InvestmentCalculatorState>()(
               annualAppreciation
               annualRentIncrease
               projectionYears
+              rehabEnabled
+              rehabRentIncreasePercentage
+              rehabItems {
+                category
+                cost
+              }
               units {
                 id
                 type
@@ -547,6 +677,15 @@ export const useInvestmentCalculatorStore = create<InvestmentCalculatorState>()(
               annualRentIncrease: config.annualRentIncrease,
               projectionYears: config.projectionYears,
             },
+            rehabInfo: {
+              enabled: config.rehabEnabled,
+              rentIncreasePercentage: config.rehabRentIncreasePercentage,
+              items: config.rehabItems.map((item: any) => ({
+                id: item.id,
+                category: item.category,
+                cost: item.cost,
+              })),
+            },
             savedConfigurationId: config.id,
           }
 
@@ -592,6 +731,11 @@ export const useInvestmentCalculatorStore = create<InvestmentCalculatorState>()(
             annualRentIncrease: 2,
             projectionYears: 30
           },
+          rehabInfo: {
+            enabled: false,
+            items: [],
+            rentIncreasePercentage: 0
+          },
           savedConfigurationId: undefined,
           saveStatus: 'idle' as const,
           saveError: undefined,
@@ -625,12 +769,15 @@ export const useUnits = () => useInvestmentCalculatorStore((state) => state.unit
 export const useLoanInfo = () => useInvestmentCalculatorStore((state) => state.loanInfo)
 export const useOperatingExpenses = () => useInvestmentCalculatorStore((state) => state.operatingExpenses)
 export const useAssumptions = () => useInvestmentCalculatorStore((state) => state.assumptions)
+export const useRehabInfo = () => useInvestmentCalculatorStore((state) => state.rehabInfo)
 export const useProjections = () => useInvestmentCalculatorStore((state) => state.projections)
 export const useTotalMonthlyRent = () => useInvestmentCalculatorStore((state) => state.totalMonthlyRent)
 export const useMonthlyMortgagePayment = () => useInvestmentCalculatorStore((state) => state.monthlyMortgagePayment)
 export const useDownPayment = () => useInvestmentCalculatorStore((state) => state.downPayment)
 export const useLoanAmount = () => useInvestmentCalculatorStore((state) => state.loanAmount)
 export const useCapRate = () => useInvestmentCalculatorStore((state) => state.capRate)
+export const useTotalRehabCost = () => useInvestmentCalculatorStore((state) => state.totalRehabCost)
+export const useAdjustedMonthlyRent = () => useInvestmentCalculatorStore((state) => state.adjustedMonthlyRent)
 
 // Fixed action selectors - these now return stable references
 export const usePropertyInfoActions = () => useInvestmentCalculatorStore((state) => state.setPropertyInfo)
@@ -643,6 +790,10 @@ export const useUpdateUnit = () => useInvestmentCalculatorStore((state) => state
 export const useLoanInfoActions = () => useInvestmentCalculatorStore((state) => state.setLoanInfo)
 export const useOperatingExpensesActions = () => useInvestmentCalculatorStore((state) => state.setOperatingExpenses)
 export const useAssumptionsActions = () => useInvestmentCalculatorStore((state) => state.setAssumptions)
+export const useRehabInfoActions = () => useInvestmentCalculatorStore((state) => state.setRehabInfo)
+export const useAddRehabItem = () => useInvestmentCalculatorStore((state) => state.addRehabItem)
+export const useRemoveRehabItem = () => useInvestmentCalculatorStore((state) => state.removeRehabItem)
+export const useUpdateRehabItem = () => useInvestmentCalculatorStore((state) => state.updateRehabItem)
 
 // Configuration management selectors
 export const useSaveConfiguration = () => useInvestmentCalculatorStore((state) => state.saveConfiguration)

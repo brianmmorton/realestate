@@ -1,6 +1,7 @@
 import React from 'react'
 import { PropertyInfoCard } from './PropertyInfoCard'
 import { UnitsConfigCard } from './UnitsConfigCard'
+import { RehabCard } from './RehabCard'
 import { LoanInfoCard } from './LoanInfoCard'
 import { OperatingExpensesCard } from './OperatingExpensesCard'
 import { AssumptionsCard } from './AssumptionsCard'
@@ -16,9 +17,12 @@ import {
   useUnits,
   useLoanInfo,
   useOperatingExpenses,
+  useRehabInfo,
   useAssumptions,
   useProjections,
   useTotalMonthlyRent,
+  useAdjustedMonthlyRent,
+  useTotalRehabCost,
   useMonthlyMortgagePayment,
   useDownPayment,
   useLoanAmount,
@@ -26,7 +30,6 @@ import {
 } from '@/stores/investment-calculator-store'
 import { Save, CheckCircle, AlertCircle, Loader2, FileDown } from 'lucide-react'
 import jsPDF from 'jspdf'
-import html2canvas from 'html2canvas'
 
 const SaveConfigurationButton: React.FC = () => {
   const { user } = useAuth()
@@ -135,9 +138,12 @@ const ExportToPDFButton: React.FC = () => {
   const units = useUnits()
   const loanInfo = useLoanInfo()
   const operatingExpenses = useOperatingExpenses()
+  const rehabInfo = useRehabInfo()
   const assumptions = useAssumptions()
   const projections = useProjections()
   const totalMonthlyRent = useTotalMonthlyRent()
+  const adjustedMonthlyRent = useAdjustedMonthlyRent()
+  const totalRehabCost = useTotalRehabCost()
   const monthlyMortgagePayment = useMonthlyMortgagePayment()
   const downPayment = useDownPayment()
   const loanAmount = useLoanAmount()
@@ -190,7 +196,33 @@ const ExportToPDFButton: React.FC = () => {
           pdf.text(`Unit ${index + 1}: ${unit.quantity}x ${unit.type} - $${unit.monthlyRent.toLocaleString()}/month`, 20, currentY)
           currentY += 6
         })
-        pdf.text(`Total Monthly Rent: $${totalMonthlyRent.toLocaleString()}`, 20, currentY)
+        pdf.text(`Base Monthly Rent: $${totalMonthlyRent.toLocaleString()}`, 20, currentY)
+        currentY += 6
+        if (rehabInfo.enabled && adjustedMonthlyRent !== totalMonthlyRent) {
+          pdf.text(`Adjusted Monthly Rent (after rehab): $${adjustedMonthlyRent.toLocaleString()}`, 20, currentY)
+          currentY += 6
+        }
+        currentY += 9
+      }
+
+      // Rehab Information
+      if (rehabInfo.enabled && totalRehabCost > 0) {
+        pdf.setFontSize(16)
+        pdf.setFont('helvetica', 'bold')
+        pdf.text('Rehab & Renovation', 20, currentY)
+        currentY += 10
+
+        pdf.setFontSize(12)
+        pdf.setFont('helvetica', 'normal')
+        rehabInfo.items.forEach((item) => {
+          if (item.category && item.cost > 0) {
+            pdf.text(`${item.category}: $${item.cost.toLocaleString()}`, 20, currentY)
+            currentY += 6
+          }
+        })
+        pdf.text(`Total Rehab Cost: $${totalRehabCost.toLocaleString()}`, 20, currentY)
+        currentY += 6
+        pdf.text(`Expected Rent Increase: ${rehabInfo.rentIncreasePercentage}%`, 20, currentY)
         currentY += 15
       }
 
@@ -381,6 +413,7 @@ export const InvestmentCalculator: React.FC = () => {
 
       <PropertyInfoCard />
       <UnitsConfigCard />
+      <RehabCard />
       <LoanInfoCard />
       <OperatingExpensesCard />
       <AssumptionsCard />

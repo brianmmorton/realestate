@@ -19,6 +19,7 @@ export class PropertyConfigurationResolver {
       include: {
         user: true,
         units: true,
+        rehabItems: true,
       },
       orderBy: {
         createdAt: 'desc',
@@ -40,9 +41,14 @@ export class PropertyConfigurationResolver {
       otherExpenses: Number(config.otherExpenses),
       annualAppreciation: Number(config.annualAppreciation),
       annualRentIncrease: Number(config.annualRentIncrease),
+      rehabRentIncreasePercentage: Number(config.rehabRentIncreasePercentage),
       units: config.units.map((unit: any) => ({
         ...unit,
         monthlyRent: Number(unit.monthlyRent),
+      })),
+      rehabItems: config.rehabItems.map((item: any) => ({
+        ...item,
+        cost: Number(item.cost),
       })),
     }))
   }
@@ -64,6 +70,7 @@ export class PropertyConfigurationResolver {
       include: {
         user: true,
         units: true,
+        rehabItems: true,
       },
     })
 
@@ -86,9 +93,14 @@ export class PropertyConfigurationResolver {
       otherExpenses: Number(configuration.otherExpenses),
       annualAppreciation: Number(configuration.annualAppreciation),
       annualRentIncrease: Number(configuration.annualRentIncrease),
+      rehabRentIncreasePercentage: Number(configuration.rehabRentIncreasePercentage),
       units: configuration.units.map(unit => ({
         ...unit,
         monthlyRent: Number(unit.monthlyRent),
+      })),
+      rehabItems: configuration.rehabItems.map(item => ({
+        ...item,
+        cost: Number(item.cost),
       })),
     }
   }
@@ -158,6 +170,8 @@ export class PropertyConfigurationResolver {
         annualAppreciation: input.annualAppreciation,
         annualRentIncrease: input.annualRentIncrease,
         projectionYears: input.projectionYears,
+        rehabEnabled: input.rehabEnabled,
+        rehabRentIncreasePercentage: input.rehabRentIncreasePercentage,
         units: {
           create: input.units.map((unit: any) => ({
             type: unit.type,
@@ -165,10 +179,17 @@ export class PropertyConfigurationResolver {
             monthlyRent: unit.monthlyRent,
           })),
         },
+        rehabItems: {
+          create: input.rehabItems.map((item: any) => ({
+            category: item.category,
+            cost: item.cost,
+          })),
+        },
       },
       include: {
         user: true,
         units: true,
+        rehabItems: true,
       },
     })
   )
@@ -188,9 +209,14 @@ export class PropertyConfigurationResolver {
       otherExpenses: Number(configuration.otherExpenses),
       annualAppreciation: Number(configuration.annualAppreciation),
       annualRentIncrease: Number(configuration.annualRentIncrease),
+      rehabRentIncreasePercentage: Number(configuration.rehabRentIncreasePercentage),
       units: configuration.units.map((unit: any) => ({
         ...unit,
         monthlyRent: Number(unit.monthlyRent),
+      })),
+      rehabItems: configuration.rehabItems.map((item: any) => ({
+        ...item,
+        cost: Number(item.cost),
       })),
     }
   }

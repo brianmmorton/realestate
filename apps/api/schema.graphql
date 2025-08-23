@@ -19,6 +19,9 @@ input CreatePropertyConfigurationInput {
   propertyManagement: Float!
   propertyPrice: Float!
   propertyTaxes: Float!
+  rehabEnabled: Boolean!
+  rehabItems: [RehabItemInput!]!
+  rehabRentIncreasePercentage: Float!
   units: [UnitInput!]!
   utilities: Float!
   vacancyRate: Float!
@@ -81,6 +84,9 @@ type PropertyConfiguration {
   propertyManagement: Float!
   propertyPrice: Float!
   propertyTaxes: Float!
+  rehabEnabled: Boolean!
+  rehabItems: [RehabItemEntity!]!
+  rehabRentIncreasePercentage: Float!
   units: [UnitEntity!]!
   updatedAt: DateTimeISO!
   user: User!
@@ -95,6 +101,20 @@ type Query {
   property(id: ID!): Property
   propertyConfiguration(id: ID!): PropertyConfiguration
   propertyConfigurations: [PropertyConfiguration!]!
+}
+
+type RehabItemEntity {
+  category: String!
+  cost: Float!
+  createdAt: DateTimeISO!
+  id: ID!
+  propertyConfigurationId: String!
+  updatedAt: DateTimeISO!
+}
+
+input RehabItemInput {
+  category: String!
+  cost: Float!
 }
 
 type UnitEntity {
