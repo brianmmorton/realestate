@@ -1,9 +1,22 @@
 {
-  "buildCommand": "cd apps/web && npm install && npm run build",
+  "buildCommand": "cd apps/api && npm install && npm run build:vercel && cd ../web && npm install && npm run build",
   "outputDirectory": "apps/web/dist",
   "installCommand": "npm install",
   "framework": "vite",
+  "functions": {
+    "apps/api/src/serverless/*.ts": {
+      "runtime": "@vercel/node"
+    }
+  },
   "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/apps/api/src/api/index.ts"
+    },
+    {
+      "source": "/health",
+      "destination": "/apps/api/src/api/health.ts"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"

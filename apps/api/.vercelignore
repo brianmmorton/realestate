@@ -1,0 +1,17 @@
+node_modules
+.env
+.env.local
+.env.*.local
+dist
+coverage
+*.log
+.DS_Store
+.git
+.gitignore
+README.md
+tsconfig.json
+.eslintrc*
+.prettierrc*
+src/__tests__
+**/*.test.ts
+**/*.spec.ts 

@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
+    "build:vercel": "prisma generate",
     "start": "node dist/index.js",
     "lint": "eslint . --ext ts --report-unused-disable-directives --max-warnings 0",
     "type-check": "tsc --noEmit",
@@ -43,6 +44,7 @@
     "@types/node": "^20.9.0",
     "@typescript-eslint/eslint-plugin": "^6.10.0",
     "@typescript-eslint/parser": "^6.10.0",
+    "@vercel/node": "^3.2.29",
     "eslint": "^8.53.0",
     "prettier": "^3.1.0",
     "tsx": "^4.1.4",

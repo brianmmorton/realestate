@@ -5,7 +5,7 @@ import path from 'path'
 
 async function generateSchema() {
   try {
-    const schema = await createSchema()
+    await createSchema()
     
     // Write schema to both api and web directories
     const apiSchemaPath = path.join(process.cwd(), '../../schema.graphql')

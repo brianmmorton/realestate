@@ -1,11 +1,8 @@
-import 'reflect-metadata'
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
-import { createYoga } from 'graphql-yoga'
-import { createSchema } from './graphql/schema.js'
-import { createContext } from './graphql/context.js'
+import { createGraphQLServer } from './graphql/server.js'
 import { config } from './config/index.js'
 
 async function startServer() {
@@ -20,18 +17,15 @@ async function startServer() {
   }))
 
   // GraphQL endpoint
-  const schema = await createSchema()
-  const yoga = createYoga({
-    schema,
-    context: createContext,
-    graphqlEndpoint: '/graphql',
-    cors: false, // Handled by express cors middleware
+  const yoga = await createGraphQLServer({
+    endpoint: '/graphql',
+    landingPage: true
   })
 
-  app.all('/graphql', yoga)
+  app.all('/graphql', yoga.requestListener)
 
   // Health check endpoint
-  app.get('/health', (req, res) => {
+  app.get('/health', (_req, res) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString() })
   })
 
