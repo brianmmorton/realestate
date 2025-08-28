@@ -6,7 +6,7 @@ echo $(pwd)
 # Build the API
 cd apps/api
 npm install
-npm run build:vercel
+npm run build
 cd ../..
 
 # Build the web app
