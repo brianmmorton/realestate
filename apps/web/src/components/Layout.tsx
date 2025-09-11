@@ -17,7 +17,7 @@ export default function Layout() {
             <Link to="/" className="text-foreground hover:text-primary">
               Home
             </Link>
-            <Link to="/calculator" className="text-foreground hover:text-primary">
+            <Link to="/calculator/new" className="text-foreground hover:text-primary">
               Calculator
             </Link>
             

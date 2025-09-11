@@ -1,7 +1,7 @@
 import React, { useState, Suspense } from 'react'
 import { graphql, commitMutation } from 'relay-runtime'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/button'
-import { useLoadConfiguration, useResetConfiguration } from '../../stores/investment-calculator-store'
 import { useAuth } from '../../providers/auth-provider'
 import { relayEnvironment } from '../../lib/relay'
 import { PropertiesList } from './PropertiesList'
@@ -15,18 +15,12 @@ const DeletePropertyConfigurationMutation = graphql`
 
 export const PropertiesPage: React.FC = () => {
   const [error, setError] = useState('')
-  const loadConfiguration = useLoadConfiguration()
-  const resetConfiguration = useResetConfiguration()
+  const navigate = useNavigate()
   const { user } = useAuth()
 
-  const handleLoadConfiguration = async (configurationId: string) => {
-    try {
-      await loadConfiguration(configurationId)
-      // Navigate to calculator page (you might want to use router here)
-      window.location.href = '/calculator'
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load configuration')
-    }
+  const handleLoadConfiguration = (configurationId: string) => {
+    // Navigate to calculator page with the property ID
+    navigate(`/calculator/${configurationId}`)
   }
 
   const handleDeleteConfiguration = async (configurationId: string) => {
@@ -56,8 +50,8 @@ export const PropertiesPage: React.FC = () => {
   }
 
   const handleNewConfiguration = () => {
-    resetConfiguration()
-    window.location.href = '/calculator'
+    // Navigate to calculator page with "new" parameter to reset configuration
+    navigate('/calculator/new')
   }
 
   if (!user) {

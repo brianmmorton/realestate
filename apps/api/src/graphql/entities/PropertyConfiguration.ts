@@ -78,6 +78,49 @@ export class PropertyConfiguration {
   @Field(() => Float)
   rehabRentIncreasePercentage!: number
 
+  // Property-Specific Tax Information
+  @Field(() => Float, { nullable: true })
+  landValue?: number
+
+  @Field(() => Float, { nullable: true })
+  depreciableBasis?: number
+
+  @Field(() => Date, { nullable: true })
+  placedInServiceDate?: Date
+
+  @Field(() => Float, { nullable: true })
+  priorDepreciation?: number
+
+  // Property-Specific Deductions
+  @Field(() => Float)
+  professionalFees!: number
+
+  @Field(() => Float)
+  advertisingCosts!: number
+
+  @Field(() => Float)
+  travelExpenses!: number
+
+  @Field(() => Float)
+  homeOfficeExpenses!: number
+
+  // Special Tax Situations
+  @Field(() => Boolean)
+  isOpportunityZone!: boolean
+
+  @Field(() => Boolean)
+  isHistoricProperty!: boolean
+
+  @Field(() => Boolean)
+  qualifiesForEnergyCredits!: boolean
+
+  // Financing Tax Implications
+  @Field(() => String, { nullable: true })
+  downPaymentSource?: string
+
+  @Field(() => Boolean)
+  hasSellerFinancing!: boolean
+
   // Relations
   @Field(() => User)
   user!: User

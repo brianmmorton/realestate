@@ -2,6 +2,12 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { supabase } from '../lib/supabase'
 
+export interface PropertyInfo {
+  price: number
+  address: string
+  name: string
+}
+
 export interface Unit {
   id: string
   type: string
@@ -13,12 +19,6 @@ export interface LoanInfo {
   downPayment: number
   interestRate: number
   loanTermYears: number
-}
-
-export interface PropertyInfo {
-  price: number
-  address: string
-  name: string
 }
 
 export interface OperatingExpenses {
@@ -50,6 +50,22 @@ export interface RehabInfo {
   rentIncreasePercentage: number
 }
 
+export interface PropertyTaxInfo {
+  landValue?: number
+  depreciableBasis?: number
+  placedInServiceDate?: string
+  priorDepreciation?: number
+  professionalFees: number
+  advertisingCosts: number
+  travelExpenses: number
+  homeOfficeExpenses: number
+  isOpportunityZone: boolean
+  isHistoricProperty: boolean
+  qualifiesForEnergyCredits: boolean
+  downPaymentSource?: string
+  hasSellerFinancing: boolean
+}
+
 export interface YearlyProjection {
   year: number
   grossRentalIncome: number
@@ -60,9 +76,10 @@ export interface YearlyProjection {
   principalPaydown: number
   appreciation: number
   totalReturn: number
-  equity: number
+
   remainingLoanBalance: number
   propertyValue: number
+  equity: number
 }
 
 interface InvestmentCalculatorState {
@@ -73,6 +90,7 @@ interface InvestmentCalculatorState {
   operatingExpenses: OperatingExpenses
   assumptions: Assumptions
   rehabInfo: RehabInfo
+  propertyTaxInfo: PropertyTaxInfo
   savedConfigurationId?: string
   saveStatus: 'idle' | 'saving' | 'success' | 'error'
   saveError?: string
@@ -86,6 +104,7 @@ interface InvestmentCalculatorState {
   setOperatingExpenses: (expenses: Partial<OperatingExpenses>) => void
   setAssumptions: (assumptions: Partial<Assumptions>) => void
   setRehabInfo: (info: Partial<RehabInfo>) => void
+  setPropertyTaxInfo: (info: Partial<PropertyTaxInfo>) => void
   addRehabItem: () => void
   removeRehabItem: (id: string) => void
   updateRehabItem: (id: string, field: keyof RehabItem, value: string | number) => void
@@ -186,16 +205,16 @@ const calculateProjections = (
     results.push({
       year,
       grossRentalIncome: Math.round(grossRentalIncome),
-      operatingExpenses: Math.round(totalOperatingExpenses + vacancyLoss),
+      operatingExpenses: Math.round(totalOperatingExpenses),
       netOperatingIncome: Math.round(netOperatingIncome),
       mortgagePayments: Math.round(annualMortgagePayments),
       cashFlow: Math.round(cashFlow),
       principalPaydown: Math.round(yearlyPrincipalPaydown),
       appreciation: Math.round(appreciation),
       totalReturn: Math.round(totalReturn),
-      equity: Math.round(equity),
       remainingLoanBalance: Math.round(remainingBalance),
-      propertyValue: Math.round(currentPropertyValue)
+      propertyValue: Math.round(currentPropertyValue),
+      equity: Math.round(equity),
     })
   }
   
@@ -282,6 +301,16 @@ export const useInvestmentCalculatorStore = create<InvestmentCalculatorState>()(
         enabled: false,
         items: [],
         rentIncreasePercentage: 0
+      },
+      propertyTaxInfo: {
+        professionalFees: 0,
+        advertisingCosts: 0,
+        travelExpenses: 0,
+        homeOfficeExpenses: 0,
+        isOpportunityZone: false,
+        isHistoricProperty: false,
+        qualifiesForEnergyCredits: false,
+        hasSellerFinancing: false,
       },
 
       // Initial computed values
@@ -425,6 +454,21 @@ export const useInvestmentCalculatorStore = create<InvestmentCalculatorState>()(
         })
       },
 
+      setPropertyTaxInfo: (info) => {
+        const currentState = get()
+        const updatedPropertyTaxInfo = { ...currentState.propertyTaxInfo, ...info }
+        const newState = {
+          ...currentState,
+          propertyTaxInfo: updatedPropertyTaxInfo
+        }
+        const computedValues = calculateComputedValues(newState)
+        
+        set({
+          ...newState,
+          ...computedValues
+        })
+      },
+
       addRehabItem: () => {
         const currentState = get()
         const newItem: RehabItem = {
@@ -519,6 +563,19 @@ export const useInvestmentCalculatorStore = create<InvestmentCalculatorState>()(
             projectionYears: currentState.assumptions.projectionYears,
             rehabEnabled: currentState.rehabInfo.enabled,
             rehabRentIncreasePercentage: currentState.rehabInfo.rentIncreasePercentage,
+            landValue: currentState.propertyTaxInfo.landValue,
+            depreciableBasis: currentState.propertyTaxInfo.depreciableBasis,
+            placedInServiceDate: currentState.propertyTaxInfo.placedInServiceDate,
+            priorDepreciation: currentState.propertyTaxInfo.priorDepreciation,
+            professionalFees: currentState.propertyTaxInfo.professionalFees,
+            advertisingCosts: currentState.propertyTaxInfo.advertisingCosts,
+            travelExpenses: currentState.propertyTaxInfo.travelExpenses,
+            homeOfficeExpenses: currentState.propertyTaxInfo.homeOfficeExpenses,
+            isOpportunityZone: currentState.propertyTaxInfo.isOpportunityZone,
+            isHistoricProperty: currentState.propertyTaxInfo.isHistoricProperty,
+            qualifiesForEnergyCredits: currentState.propertyTaxInfo.qualifiesForEnergyCredits,
+            downPaymentSource: currentState.propertyTaxInfo.downPaymentSource,
+            hasSellerFinancing: currentState.propertyTaxInfo.hasSellerFinancing,
             rehabItems: currentState.rehabInfo.items.map(item => ({
               category: item.category,
               cost: item.cost,
@@ -574,131 +631,11 @@ export const useInvestmentCalculatorStore = create<InvestmentCalculatorState>()(
         }
       },
 
+      // Note: loadConfiguration will be handled by GraphQL components, not the store
       loadConfiguration: async (configurationId: string) => {
-        const query = `
-          query GetPropertyConfiguration($id: ID!) {
-            propertyConfiguration(id: $id) {
-              id
-              name
-              propertyPrice
-              propertyAddress
-              downPayment
-              interestRate
-              loanTermYears
-              annualOperatingCosts
-              vacancyRate
-              propertyTaxes
-              insurance
-              propertyManagement
-              maintenance
-              utilities
-              otherExpenses
-              annualAppreciation
-              annualRentIncrease
-              projectionYears
-              rehabEnabled
-              rehabRentIncreasePercentage
-              rehabItems {
-                category
-                cost
-              }
-              units {
-                id
-                type
-                quantity
-                monthlyRent
-              }
-            }
-          }
-        `
-
-        try {
-          // Get the current session for authentication
-          const { data: { session } } = await supabase.auth.getSession()
-          
-          const headers: Record<string, string> = {
-            'Content-Type': 'application/json',
-          }
-          
-          if (session?.access_token) {
-            headers['Authorization'] = `Bearer ${session.access_token}`
-          }
-          
-          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
-          const response = await fetch(`${API_URL}/graphql`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-              query,
-              variables: { id: configurationId },
-            }),
-          })
-
-          const result = await response.json()
-          
-          if (result.errors) {
-            throw new Error(result.errors[0].message)
-          }
-
-          const config = result.data.propertyConfiguration
-          if (!config) {
-            throw new Error('Configuration not found')
-          }
-
-          const newState = {
-            propertyInfo: {
-              price: config.propertyPrice,
-              address: config.propertyAddress,
-              name: config.name
-            },
-            units: config.units.map((unit: any, index: number) => ({
-              id: unit.id || index.toString(),
-              type: unit.type,
-              quantity: unit.quantity,
-              monthlyRent: unit.monthlyRent,
-            })),
-            loanInfo: {
-              downPayment: config.downPayment,
-              interestRate: config.interestRate,
-              loanTermYears: config.loanTermYears,
-            },
-            operatingExpenses: {
-              annualOperatingCosts: config.annualOperatingCosts,
-              vacancyRate: config.vacancyRate,
-              propertyTaxes: config.propertyTaxes,
-              insurance: config.insurance,
-              propertyManagement: config.propertyManagement,
-              maintenance: config.maintenance,
-              utilities: config.utilities,
-              other: config.otherExpenses,
-            },
-            assumptions: {
-              annualAppreciation: config.annualAppreciation,
-              annualRentIncrease: config.annualRentIncrease,
-              projectionYears: config.projectionYears,
-            },
-            rehabInfo: {
-              enabled: config.rehabEnabled,
-              rentIncreasePercentage: config.rehabRentIncreasePercentage,
-              items: config.rehabItems.map((item: any) => ({
-                id: item.id,
-                category: item.category,
-                cost: item.cost,
-              })),
-            },
-            savedConfigurationId: config.id,
-          }
-
-          const computedValues = calculateComputedValues(newState)
-          
-          set({
-            ...newState,
-            ...computedValues
-          })
-        } catch (error) {
-          console.error('Failed to load configuration:', error)
-          throw error
-        }
+        // This method will be deprecated in favor of GraphQL components
+        // For now, we'll keep it for backward compatibility
+        set({ savedConfigurationId: configurationId })
       },
 
       resetConfiguration: () => {
@@ -736,6 +673,16 @@ export const useInvestmentCalculatorStore = create<InvestmentCalculatorState>()(
             items: [],
             rentIncreasePercentage: 0
           },
+          propertyTaxInfo: {
+            professionalFees: 0,
+            advertisingCosts: 0,
+            travelExpenses: 0,
+            homeOfficeExpenses: 0,
+            isOpportunityZone: false,
+            isHistoricProperty: false,
+            qualifiesForEnergyCredits: false,
+            hasSellerFinancing: false,
+          },
           savedConfigurationId: undefined,
           saveStatus: 'idle' as const,
           saveError: undefined,
@@ -770,6 +717,7 @@ export const useLoanInfo = () => useInvestmentCalculatorStore((state) => state.l
 export const useOperatingExpenses = () => useInvestmentCalculatorStore((state) => state.operatingExpenses)
 export const useAssumptions = () => useInvestmentCalculatorStore((state) => state.assumptions)
 export const useRehabInfo = () => useInvestmentCalculatorStore((state) => state.rehabInfo)
+export const usePropertyTaxInfo = () => useInvestmentCalculatorStore((state) => state.propertyTaxInfo)
 export const useProjections = () => useInvestmentCalculatorStore((state) => state.projections)
 export const useTotalMonthlyRent = () => useInvestmentCalculatorStore((state) => state.totalMonthlyRent)
 export const useMonthlyMortgagePayment = () => useInvestmentCalculatorStore((state) => state.monthlyMortgagePayment)
@@ -791,6 +739,7 @@ export const useLoanInfoActions = () => useInvestmentCalculatorStore((state) => 
 export const useOperatingExpensesActions = () => useInvestmentCalculatorStore((state) => state.setOperatingExpenses)
 export const useAssumptionsActions = () => useInvestmentCalculatorStore((state) => state.setAssumptions)
 export const useRehabInfoActions = () => useInvestmentCalculatorStore((state) => state.setRehabInfo)
+export const usePropertyTaxInfoActions = () => useInvestmentCalculatorStore((state) => state.setPropertyTaxInfo)
 export const useAddRehabItem = () => useInvestmentCalculatorStore((state) => state.addRehabItem)
 export const useRemoveRehabItem = () => useInvestmentCalculatorStore((state) => state.removeRehabItem)
 export const useUpdateRehabItem = () => useInvestmentCalculatorStore((state) => state.updateRehabItem)

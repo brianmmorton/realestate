@@ -4,24 +4,37 @@
 # -----------------------------------------------
 
 input CreatePropertyConfigurationInput {
+  advertisingCosts: Float!
   annualAppreciation: Float!
   annualOperatingCosts: Float!
   annualRentIncrease: Float!
+  depreciableBasis: Float
   downPayment: Float!
+  downPaymentSource: String
+  hasSellerFinancing: Boolean!
+  homeOfficeExpenses: Float!
   insurance: Float!
   interestRate: Float!
+  isHistoricProperty: Boolean!
+  isOpportunityZone: Boolean!
+  landValue: Float
   loanTermYears: Int!
   maintenance: Float!
   name: String!
   otherExpenses: Float!
+  placedInServiceDate: String
+  priorDepreciation: Float
+  professionalFees: Float!
   projectionYears: Int!
   propertyAddress: String!
   propertyManagement: Float!
   propertyPrice: Float!
   propertyTaxes: Float!
+  qualifiesForEnergyCredits: Boolean!
   rehabEnabled: Boolean!
   rehabItems: [RehabItemInput!]!
   rehabRentIncreasePercentage: Float!
+  travelExpenses: Float!
   units: [UnitInput!]!
   utilities: Float!
   vacancyRate: Float!
@@ -49,6 +62,8 @@ type Mutation {
   deleteProperty(id: ID!): Boolean!
   deletePropertyConfiguration(id: ID!): Boolean!
   updateProperty(id: ID!, input: UpdatePropertyInput!): Property!
+  updatePropertyTaxInfo(id: ID!, input: UpdatePropertyTaxInfoInput!): PropertyConfiguration!
+  updateUserTaxProfile(input: UpdateUserTaxProfileInput!): User!
 }
 
 type Property {
@@ -67,26 +82,39 @@ type Property {
 }
 
 type PropertyConfiguration {
+  advertisingCosts: Float!
   annualAppreciation: Float!
   annualOperatingCosts: Float!
   annualRentIncrease: Float!
   createdAt: DateTimeISO!
+  depreciableBasis: Float
   downPayment: Float!
+  downPaymentSource: String
+  hasSellerFinancing: Boolean!
+  homeOfficeExpenses: Float!
   id: ID!
   insurance: Float!
   interestRate: Float!
+  isHistoricProperty: Boolean!
+  isOpportunityZone: Boolean!
+  landValue: Float
   loanTermYears: Int!
   maintenance: Float!
   name: String!
   otherExpenses: Float!
+  placedInServiceDate: DateTimeISO
+  priorDepreciation: Float
+  professionalFees: Float!
   projectionYears: Int!
   propertyAddress: String!
   propertyManagement: Float!
   propertyPrice: Float!
   propertyTaxes: Float!
+  qualifiesForEnergyCredits: Boolean!
   rehabEnabled: Boolean!
   rehabItems: [RehabItemEntity!]!
   rehabRentIncreasePercentage: Float!
+  travelExpenses: Float!
   units: [UnitEntity!]!
   updatedAt: DateTimeISO!
   user: User!
@@ -144,10 +172,52 @@ input UpdatePropertyInput {
   title: String
 }
 
+input UpdatePropertyTaxInfoInput {
+  advertisingCosts: Float
+  depreciableBasis: Float
+  downPaymentSource: String
+  hasSellerFinancing: Boolean
+  homeOfficeExpenses: Float
+  isHistoricProperty: Boolean
+  isOpportunityZone: Boolean
+  landValue: Float
+  placedInServiceDate: DateTimeISO
+  priorDepreciation: Float
+  professionalFees: Float
+  qualifiesForEnergyCredits: Boolean
+  travelExpenses: Float
+}
+
+input UpdateUserTaxProfileInput {
+  annualGrossIncome: Float
+  existingItemizedDeductions: Float
+  filingStatus: String
+  intends1031Exchange: Boolean
+  isRealEstateProfessional: Boolean
+  marginalTaxBracket: Float
+  otherPassiveIncome: Float
+  plannedHoldPeriod: Int
+  stateOfResidence: String
+  stateTaxRate: Float
+  useStandardDeduction: Boolean
+}
+
 type User {
+  annualGrossIncome: Float
   createdAt: DateTimeISO!
   email: String!
+  existingItemizedDeductions: Float
+  filingStatus: String
   id: ID!
+  intends1031Exchange: Boolean!
+  isRealEstateProfessional: Boolean!
+  marginalTaxBracket: Float
+  otherPassiveIncome: Float
+  plannedHoldPeriod: Float
   properties: [Property!]!
+  stateOfResidence: String
+  stateTaxRate: Float
+  taxProfileUpdatedAt: DateTimeISO
   updatedAt: DateTimeISO!
+  useStandardDeduction: Boolean!
 }

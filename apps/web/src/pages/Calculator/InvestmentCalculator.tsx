@@ -6,6 +6,9 @@ import { LoanInfoCard } from './LoanInfoCard'
 import { OperatingExpensesCard } from './OperatingExpensesCard'
 import { AssumptionsCard } from './AssumptionsCard'
 import { InvestmentResultsCard } from './InvestmentResultsCard'
+import { TaxProfileCard } from './TaxProfileCard'
+import { PropertyTaxCard } from './PropertyTaxCard'
+import { TaxBenefitsCard } from './TaxBenefitsCard'
 import { Button } from '../../components/ui/button'
 import { useAuth } from '../../providers/auth-provider'
 import { 
@@ -862,7 +865,7 @@ export const InvestmentCalculator: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold mb-2">Property Investment Calculator</h1>
           <p className="text-muted-foreground">
-            Analyze your property investment potential with detailed projections
+            Analyze your property investment potential with detailed projections and tax benefits
           </p>
         </div>
         
@@ -878,6 +881,21 @@ export const InvestmentCalculator: React.FC = () => {
       <LoanInfoCard />
       <OperatingExpensesCard />
       <AssumptionsCard />
+      
+      {/* Tax Analysis Section */}
+      <div className="space-y-8">
+        <div className="border-t pt-8">
+          <h2 className="text-2xl font-bold mb-4">Tax Analysis</h2>
+          <p className="text-muted-foreground mb-6">
+            Configure your tax profile and property-specific tax information to see the complete investment picture including tax benefits.
+          </p>
+        </div>
+        
+        <TaxProfileCard />
+        <PropertyTaxCard />
+        <TaxBenefitsCard />
+      </div>
+      
       <InvestmentResultsCard />
     </div>
   )

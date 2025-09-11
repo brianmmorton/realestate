@@ -20,6 +20,28 @@ model User {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
+  // Tax Profile (User Level - Reusable across properties)
+  annualGrossIncome      Decimal?  @map("annual_gross_income") @db.Decimal(12, 2)
+  filingStatus          String?   @map("filing_status") // "single", "married_joint", "married_separate", "head_of_household"
+  stateOfResidence      String?   @map("state_of_residence") // Two-letter state code
+  marginalTaxBracket    Decimal?  @map("marginal_tax_bracket") @db.Decimal(5, 2) // Federal percentage
+  stateTaxRate          Decimal?  @map("state_tax_rate") @db.Decimal(5, 2)
+  
+  // Deduction Strategy
+  useStandardDeduction  Boolean   @default(true) @map("use_standard_deduction")
+  existingItemizedDeductions Decimal? @map("existing_itemized_deductions") @db.Decimal(12, 2)
+  
+  // Real Estate Professional Status
+  isRealEstateProfessional Boolean @default(false) @map("is_real_estate_professional")
+  otherPassiveIncome    Decimal?  @map("other_passive_income") @db.Decimal(12, 2)
+  
+  // Investment Strategy
+  plannedHoldPeriod     Int?      @map("planned_hold_period") // Years
+  intends1031Exchange   Boolean   @default(false) @map("intends_1031_exchange")
+  
+  // Created/Updated timestamps for tax profile
+  taxProfileUpdatedAt   DateTime? @map("tax_profile_updated_at") @db.Timestamptz(6)
+
   // Relations
   properties Property[]
   propertyConfigurations PropertyConfiguration[]
@@ -83,6 +105,27 @@ model PropertyConfiguration {
   // Rehab information
   rehabEnabled                Boolean  @default(false) @map("rehab_enabled")
   rehabRentIncreasePercentage Decimal  @default(0) @map("rehab_rent_increase_percentage") @db.Decimal(5, 2)
+
+  // Property-Specific Tax Information
+  landValue             Decimal?  @map("land_value") @db.Decimal(12, 2)
+  depreciableBasis      Decimal?  @map("depreciable_basis") @db.Decimal(12, 2)
+  placedInServiceDate   DateTime? @map("placed_in_service_date") @db.Date
+  priorDepreciation     Decimal?  @map("prior_depreciation") @db.Decimal(12, 2)
+  
+  // Property-Specific Deductions
+  professionalFees      Decimal   @default(0) @map("professional_fees") @db.Decimal(12, 2)
+  advertisingCosts      Decimal   @default(0) @map("advertising_costs") @db.Decimal(12, 2)
+  travelExpenses        Decimal   @default(0) @map("travel_expenses") @db.Decimal(12, 2)
+  homeOfficeExpenses    Decimal   @default(0) @map("home_office_expenses") @db.Decimal(12, 2)
+  
+  // Special Tax Situations
+  isOpportunityZone     Boolean   @default(false) @map("is_opportunity_zone")
+  isHistoricProperty    Boolean   @default(false) @map("is_historic_property")
+  qualifiesForEnergyCredits Boolean @default(false) @map("qualifies_for_energy_credits")
+  
+  // Financing Tax Implications
+  downPaymentSource     String?   @map("down_payment_source") // "cash", "borrowed", "1031_exchange"
+  hasSellerFinancing    Boolean   @default(false) @map("has_seller_financing")
 
   // Relations
   user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)

@@ -138,4 +138,64 @@ export class CreatePropertyConfigurationInput {
   @IsArray()
   @ValidateNested({ each: true })
   units!: UnitInput[]
+
+  // Tax-related fields
+  @Field(() => Float, { nullable: true })
+  @IsNumber()
+  @Min(0)
+  landValue?: number
+
+  @Field(() => Float, { nullable: true })
+  @IsNumber()
+  @Min(0)
+  depreciableBasis?: number
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  placedInServiceDate?: string
+
+  @Field(() => Float, { nullable: true })
+  @IsNumber()
+  @Min(0)
+  priorDepreciation?: number
+
+  @Field(() => Float)
+  @IsNumber()
+  @Min(0)
+  professionalFees!: number
+
+  @Field(() => Float)
+  @IsNumber()
+  @Min(0)
+  advertisingCosts!: number
+
+  @Field(() => Float)
+  @IsNumber()
+  @Min(0)
+  travelExpenses!: number
+
+  @Field(() => Float)
+  @IsNumber()
+  @Min(0)
+  homeOfficeExpenses!: number
+
+  @Field(() => Boolean)
+  @IsBoolean()
+  isOpportunityZone!: boolean
+
+  @Field(() => Boolean)
+  @IsBoolean()
+  isHistoricProperty!: boolean
+
+  @Field(() => Boolean)
+  @IsBoolean()
+  qualifiesForEnergyCredits!: boolean
+
+  @Field(() => String, { nullable: true })
+  @IsString()
+  downPaymentSource?: string
+
+  @Field(() => Boolean)
+  @IsBoolean()
+  hasSellerFinancing!: boolean
 } 

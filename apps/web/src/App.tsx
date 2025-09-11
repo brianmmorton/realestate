@@ -24,6 +24,7 @@ function App() {
         <Route index element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/calculator" element={<CalculatorPage />} />
+        <Route path="/calculator/:id" element={<CalculatorPage />} />
         {user && <Route path="/dashboard" element={<DashboardPage />} />}
         {user && <Route path="/properties" element={<PropertiesPage />} />}
       </Route>

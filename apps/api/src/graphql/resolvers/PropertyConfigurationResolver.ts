@@ -1,8 +1,50 @@
 import { Resolver, Query, Mutation, Arg, Ctx, ID } from 'type-graphql'
 import { PropertyConfiguration } from '../entities/PropertyConfiguration.js'
 import { CreatePropertyConfigurationInput } from '../inputs/PropertyConfigurationInputs.js'
+import { UpdatePropertyTaxInfoInput } from '../inputs/TaxInputs.js'
 import type { GraphQLContext } from '../context.js'
 import { prisma, resetPrismaConnection } from '../../lib/prisma.js'
+
+// Helper function to map database configuration to GraphQL type
+const mapConfigurationToGraphQL = (config: any): PropertyConfiguration => ({
+  ...config,
+  propertyPrice: Number(config.propertyPrice),
+  downPayment: Number(config.downPayment),
+  interestRate: Number(config.interestRate),
+  annualOperatingCosts: Number(config.annualOperatingCosts),
+  vacancyRate: Number(config.vacancyRate),
+  propertyTaxes: Number(config.propertyTaxes),
+  insurance: Number(config.insurance),
+  propertyManagement: Number(config.propertyManagement),
+  maintenance: Number(config.maintenance),
+  utilities: Number(config.utilities),
+  otherExpenses: Number(config.otherExpenses),
+  annualAppreciation: Number(config.annualAppreciation),
+  annualRentIncrease: Number(config.annualRentIncrease),
+  rehabRentIncreasePercentage: Number(config.rehabRentIncreasePercentage),
+  // Tax-related fields
+  landValue: config.landValue ? Number(config.landValue) : undefined,
+  depreciableBasis: config.depreciableBasis ? Number(config.depreciableBasis) : undefined,
+  placedInServiceDate: config.placedInServiceDate ?? undefined,
+  priorDepreciation: config.priorDepreciation ? Number(config.priorDepreciation) : undefined,
+  professionalFees: Number(config.professionalFees),
+  advertisingCosts: Number(config.advertisingCosts),
+  travelExpenses: Number(config.travelExpenses),
+  homeOfficeExpenses: Number(config.homeOfficeExpenses),
+  isOpportunityZone: config.isOpportunityZone,
+  isHistoricProperty: config.isHistoricProperty,
+  qualifiesForEnergyCredits: config.qualifiesForEnergyCredits,
+  downPaymentSource: config.downPaymentSource ?? undefined,
+  hasSellerFinancing: config.hasSellerFinancing,
+  units: config.units.map((unit: any) => ({
+    ...unit,
+    monthlyRent: Number(unit.monthlyRent),
+  })),
+  rehabItems: config.rehabItems.map((item: any) => ({
+    ...item,
+    cost: Number(item.cost),
+  })),
+})
 
 @Resolver(() => PropertyConfiguration)
 export class PropertyConfigurationResolver {
@@ -26,31 +68,7 @@ export class PropertyConfigurationResolver {
       },
     })
 
-    return configurations.map(config => ({
-      ...config,
-      propertyPrice: Number(config.propertyPrice),
-      downPayment: Number(config.downPayment),
-      interestRate: Number(config.interestRate),
-      annualOperatingCosts: Number(config.annualOperatingCosts),
-      vacancyRate: Number(config.vacancyRate),
-      propertyTaxes: Number(config.propertyTaxes),
-      insurance: Number(config.insurance),
-      propertyManagement: Number(config.propertyManagement),
-      maintenance: Number(config.maintenance),
-      utilities: Number(config.utilities),
-      otherExpenses: Number(config.otherExpenses),
-      annualAppreciation: Number(config.annualAppreciation),
-      annualRentIncrease: Number(config.annualRentIncrease),
-      rehabRentIncreasePercentage: Number(config.rehabRentIncreasePercentage),
-      units: config.units.map((unit: any) => ({
-        ...unit,
-        monthlyRent: Number(unit.monthlyRent),
-      })),
-      rehabItems: config.rehabItems.map((item: any) => ({
-        ...item,
-        cost: Number(item.cost),
-      })),
-    }))
+    return configurations.map(mapConfigurationToGraphQL)
   }
 
   @Query(() => PropertyConfiguration, { nullable: true })
@@ -78,31 +96,7 @@ export class PropertyConfigurationResolver {
       return null
     }
 
-    return {
-      ...configuration,
-      propertyPrice: Number(configuration.propertyPrice),
-      downPayment: Number(configuration.downPayment),
-      interestRate: Number(configuration.interestRate),
-      annualOperatingCosts: Number(configuration.annualOperatingCosts),
-      vacancyRate: Number(configuration.vacancyRate),
-      propertyTaxes: Number(configuration.propertyTaxes),
-      insurance: Number(configuration.insurance),
-      propertyManagement: Number(configuration.propertyManagement),
-      maintenance: Number(configuration.maintenance),
-      utilities: Number(configuration.utilities),
-      otherExpenses: Number(configuration.otherExpenses),
-      annualAppreciation: Number(configuration.annualAppreciation),
-      annualRentIncrease: Number(configuration.annualRentIncrease),
-      rehabRentIncreasePercentage: Number(configuration.rehabRentIncreasePercentage),
-      units: configuration.units.map(unit => ({
-        ...unit,
-        monthlyRent: Number(unit.monthlyRent),
-      })),
-      rehabItems: configuration.rehabItems.map(item => ({
-        ...item,
-        cost: Number(item.cost),
-      })),
-    }
+    return mapConfigurationToGraphQL(configuration)
   }
 
   @Mutation(() => PropertyConfiguration)
@@ -185,6 +179,20 @@ export class PropertyConfigurationResolver {
             cost: item.cost,
           })),
         },
+        // Tax-related fields
+        landValue: input.landValue,
+        depreciableBasis: input.depreciableBasis,
+        placedInServiceDate: input.placedInServiceDate,
+        priorDepreciation: input.priorDepreciation,
+        professionalFees: input.professionalFees,
+        advertisingCosts: input.advertisingCosts,
+        travelExpenses: input.travelExpenses,
+        homeOfficeExpenses: input.homeOfficeExpenses,
+        isOpportunityZone: input.isOpportunityZone,
+        isHistoricProperty: input.isHistoricProperty,
+        qualifiesForEnergyCredits: input.qualifiesForEnergyCredits,
+        downPaymentSource: input.downPaymentSource,
+        hasSellerFinancing: input.hasSellerFinancing,
       },
       include: {
         user: true,
@@ -194,31 +202,42 @@ export class PropertyConfigurationResolver {
     })
   )
 
-    return {
-      ...configuration,
-      propertyPrice: Number(configuration.propertyPrice),
-      downPayment: Number(configuration.downPayment),
-      interestRate: Number(configuration.interestRate),
-      annualOperatingCosts: Number(configuration.annualOperatingCosts),
-      vacancyRate: Number(configuration.vacancyRate),
-      propertyTaxes: Number(configuration.propertyTaxes),
-      insurance: Number(configuration.insurance),
-      propertyManagement: Number(configuration.propertyManagement),
-      maintenance: Number(configuration.maintenance),
-      utilities: Number(configuration.utilities),
-      otherExpenses: Number(configuration.otherExpenses),
-      annualAppreciation: Number(configuration.annualAppreciation),
-      annualRentIncrease: Number(configuration.annualRentIncrease),
-      rehabRentIncreasePercentage: Number(configuration.rehabRentIncreasePercentage),
-      units: configuration.units.map((unit: any) => ({
-        ...unit,
-        monthlyRent: Number(unit.monthlyRent),
-      })),
-      rehabItems: configuration.rehabItems.map((item: any) => ({
-        ...item,
-        cost: Number(item.cost),
-      })),
+    return mapConfigurationToGraphQL(configuration)
+  }
+
+  @Mutation(() => PropertyConfiguration)
+  async updatePropertyTaxInfo(
+    @Arg('id', () => ID) id: string,
+    @Arg('input', () => UpdatePropertyTaxInfoInput) input: UpdatePropertyTaxInfoInput,
+    @Ctx() context: GraphQLContext
+  ): Promise<PropertyConfiguration> {
+    if (!context.user) {
+      throw new Error('You must be logged in to update property tax information')
     }
+
+    // Check if user owns the configuration
+    const configuration = await prisma.propertyConfiguration.findFirst({
+      where: {
+        id,
+        userId: context.user.id,
+      },
+    })
+
+    if (!configuration) {
+      throw new Error('Property configuration not found or you do not have permission to update it')
+    }
+
+    const updatedConfiguration = await prisma.propertyConfiguration.update({
+      where: { id },
+      data: input,
+      include: {
+        user: true,
+        units: true,
+        rehabItems: true,
+      },
+    })
+
+    return mapConfigurationToGraphQL(updatedConfiguration)
   }
 
   @Mutation(() => Boolean)
